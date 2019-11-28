@@ -1,0 +1,192 @@
+#include <ESP8266WiFi.h>
+#include <Wire.h>  // This library is already built in to the Arduino IDE
+#include <stdio.h>
+
+const char* ssid = "WLAN-351405"; // put your router name
+const char* password = "WgHmg6Rb5X6B9";// put your password
+const char* host = "api.thingspeak.com";
+char kalte[6];
+String nu = "0";
+String ei = "1";
+String zw = "2";
+String dr = "3";
+String vi = "4";
+String fu = "5";
+String se = "6";
+String si = "7";
+String ac = "8";
+String ne = "9";
+String minus = "-";
+bool done = false;
+bool p0;
+bool p1;
+bool p2;
+bool p3;
+bool p4;
+bool p5;
+bool p6;
+bool p7;
+bool p8;
+
+int make_bin(){ // hier wird die integer zahl übergeben
+  int zahl, dezi = 7, rest, ergebnis=0, faktor=1;
+  zahl=dezi;
+  while (dezi){
+    rest = dezi % 2;
+    dezi = dezi / 2;
+    
+    faktor *= 10;
+    ergebnis = ergebnis + rest * faktor;
+    }
+  ergebnis *= 0.1;
+  return ergebnis;
+}
+
+
+void setup() {
+  Serial.begin(115200);
+  delay(100);
+
+  pinMode(D0 ,OUTPUT);
+  pinMode(D1 ,OUTPUT);
+  pinMode(D2 ,OUTPUT);
+  pinMode(D3 ,OUTPUT);
+  pinMode(D4 ,OUTPUT);
+  pinMode(D5 ,OUTPUT);
+  pinMode(D6 ,OUTPUT);
+  pinMode(D7 ,OUTPUT);
+  pinMode(D8 ,OUTPUT);
+
+  digitalWrite(D0, LOW);
+  digitalWrite(D1, LOW);
+  digitalWrite(D2, LOW);
+  digitalWrite(D3, LOW);
+  digitalWrite(D4, LOW);
+  digitalWrite(D5, LOW);
+  digitalWrite(D6, LOW);
+  digitalWrite(D7, LOW);
+  digitalWrite(D8, LOW);
+
+ // We start by connecting to a WiFi network
+ 
+  Serial.println();
+  Serial.println();
+  Serial.print("Connecting to ");
+  Serial.println(ssid);
+ 
+  WiFi.begin(ssid, password);
+ 
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.println("");
+  Serial.println("WiFi connected");  
+  Serial.println("IP address: ");
+  Serial.println(WiFi.localIP());
+}
+void loop(){
+  Serial.print("connecting to ");
+  Serial.println(host);
+ 
+  // Use WiFiClient class to create TCP connections
+  WiFiClient client;
+  const int httpPort = 80;
+  if (!client.connect(host, httpPort)) {
+    Serial.println("connection failed");
+  }
+ 
+  // We now create a URI for the request
+  String url = "/apps/thinghttp/send_request?api_key=V67Q2ZYSWAZ0X9GR";
+  Serial.print("Requesting URL: ");
+  Serial.println(url);
+  // This will send the request to the server
+  client.print(String("GET ") + url + " HTTP/1.1\r\n" +
+               "Host: " + host + "\r\n" +
+               "Connection: close\r\n\r\n");
+  delay(500);
+ 
+  // Read all the lines of the reply from server and print them to Serial
+   
+    while(done == false){
+      String lline = client.readStringUntil('\r');
+    
+      if(lline[1] == nu[0]|| lline[1] == ei[0]|| lline[1] == zw[0]|| lline[1] == dr[0]|| lline[1] == vi[0]|| lline[1] == fu[0]|| lline[1] == se[0]|| lline[1] == si[0]|| lline[1] == ac[0]|| lline[1] == ne[0]|| lline[1] == minus[0]){
+      kalte[1] = lline[1];
+      done = true;
+      }
+      if(lline[2] == nu[0]|| lline[2] == ei[0]|| lline[2] == zw[0]|| lline[2] == dr[0]|| lline[2] == vi[0]|| lline[2] == fu[0]|| lline[2] == se[0]|| lline[2] == si[0]|| lline[2] == ac[0]|| lline[2] == ne[0]){
+      kalte[2] = lline[2];
+      }
+      if(lline[3] == nu[0]|| lline[3] == ei[0]|| lline[3] == zw[0]|| lline[3] == dr[0]|| lline[3] == vi[0]|| lline[3] == fu[0]|| lline[3] == se[0]|| lline[3] == si[0]|| lline[3] == ac[0]|| lline[3] == ne[0]){
+      kalte[3] = lline[3];
+      }
+      Serial.print("Kälte: ");
+      Serial.print(kalte[1]);
+      Serial.print(kalte[2]);
+      Serial.println(kalte[3]);
+
+      int dezi;
+//      int dezi2 = atoi(kalte);
+//      Serial.print("Atoi version vor Übergabe: ");
+//      Serial.println(dezi2);
+//      sscanf(kalte, "%i", &dezi);
+//      Serial.print("Vor Übergabe: ");
+//      Serial.println(dezi);
+
+  int binar = make_bin();
+  char binarstr[9];
+  sprintf(binarstr, "%d", binar);                                       // cast int to string
+//  Serial.print("Binärzahl im String: ");
+//  Serial.println(binarstr);
+
+  if(binarstr[9] == 1){//######################################## anstat den p- variablen kann man auch direkt die Pins ansprechen ! ##############################
+    p0 = HIGH;
+  }else{ p0 = LOW;}
+  
+  if(binarstr[8] == 1){
+    p1 = HIGH;
+  }else{ p1 = LOW;}
+  
+  if(binarstr[7] == 1){
+    p2 = HIGH;
+  }else{ p2 = LOW;}
+  
+  if(binarstr[6] == 1){
+    p3 = HIGH;
+  }else{ p3 = LOW;}
+  
+  if(binarstr[4] == 1){
+    p4 = HIGH;
+  }else{ p4 = LOW;}
+  
+  if(binarstr[5] == 1){
+    p5 = HIGH;
+  }else{ p5 = LOW;}
+  
+  if(binarstr[6] == 1){
+    p6 = HIGH;
+  }else{ p6 = LOW;}
+  
+  if(binarstr[7] == 1){
+    p7 = HIGH;
+  }else{ p7 = LOW;}
+  
+  if(binarstr[8] == 1){
+    p8 = HIGH;
+  }else{ p8 = LOW;}
+
+  digitalWrite(D0, p0);
+  digitalWrite(D1, p1);
+  digitalWrite(D2, p2);
+  digitalWrite(D3, p3);
+  digitalWrite(D4, p4);
+  digitalWrite(D5, p5);
+  digitalWrite(D6, p6);
+  digitalWrite(D7, p7);
+  digitalWrite(D8, p8);
+    }
+  Serial.println("closing connection");
+
+  
+  }
