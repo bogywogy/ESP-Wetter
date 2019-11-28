@@ -1,6 +1,6 @@
 // Arduino IDE 1.8.10
 // Boardverwalter URL: http://arduino.esp8266.com/stable/package_esp8266com_index.json
-// Board: ESP8622 2.6.1: NodeMCU 1.0 (ESP-12E Module)
+// Board: ESP8622 2.6.2: NodeMCU 1.0 (ESP-12E Module)
 
 #include <ESP8266WiFi.h>
 #include <Wire.h>  // This library is already built in to the Arduino iDE
@@ -19,8 +19,13 @@ String se = "6";
 String si = "7";
 String ac = "8";
 String ne = "9";
-String minus = "-";
 bool done;
+bool minus=false;
+
+int i;
+int ii;
+int iii;
+int output;
 
 void setup() {
   Serial.begin(115200);
@@ -46,7 +51,7 @@ void setup() {
   digitalWrite(D7, LOW);
   digitalWrite(D8, LOW);
 
- // We start by connecting to a WiFi network
+ // Start by connecting to a WiFi network
  
   Serial.println();
   Serial.println();
@@ -89,47 +94,55 @@ void loop(){
     done=false;
     while(done == false){
       String lline = client.readStringUntil('\r');
+      
+      // TEST
+      lline = "0-3<span";
+      Serial.print("Das hier ist lline: ");
+      Serial.println(lline);
+      Serial.println();
 
-      lline = "023";
-    
-      if(lline[1] == nu[0]|| lline[1] == ei[0]|| lline[1] == zw[0]|| lline[1] == dr[0]|| lline[1] == vi[0]|| lline[1] == fu[0]|| lline[1] == se[0]|| lline[1] == si[0]|| lline[1] == ac[0]|| lline[1] == ne[0]){
-      kalte[0] = lline[1];
-      int i;
-      i=(int)kalte[0];
-      i-=48;
-      Serial.println(i);
+//      // minus geht auch so:
+//      if(lline[1]==(char)"-"[0]){
+//        Serial.println("MINUSZAHL");
+//      }
+
+      if(lline[1]=="-"[0]){
+        kalte[0] = lline[2];
+        i=(int)kalte[0];
+        i-=48;
+        output=i;
         
-      done = true;
-      }
-      if(lline[2] == nu[0]|| lline[2] == ei[0]|| lline[2] == zw[0]|| lline[2] == dr[0]|| lline[2] == vi[0]|| lline[2] == fu[0]|| lline[2] == se[0]|| lline[2] == si[0]|| lline[2] == ac[0]|| lline[2] == ne[0]){
-      kalte[1] = lline[2];
-      // wenn done = true dann muss lline[0] eine zahl sein das heisst die zahl ist jetzt zweistellig
-      String s;
-      s="34";
-      int ii;
-      ii=(int)s[1];
-      ii-=48;
-      Serial.println(ii);
-      
-      }
-      if(lline[3] == nu[0]|| lline[3] == ei[0]|| lline[3] == zw[0]|| lline[3] == dr[0]|| lline[3] == vi[0]|| lline[3] == fu[0]|| lline[3] == se[0]|| lline[3] == si[0]|| lline[3] == ac[0]|| lline[3] == ne[0]){
-      kalte[2] = lline[3];
-      int iii;
-      iii=(int)kalte[2];
-      iii-=48;
-      Serial.println(iii);
-      
-      }
-      if(done==true){
-        Serial.println();
-        Serial.print("Kälte: ");
-        Serial.print(kalte[0]);
-        Serial.print(kalte[1]);
-        Serial.println(kalte[2]);
-        Serial.println();
+        if(lline[3] == nu[0]|| lline[3] == ei[0]|| lline[3] == zw[0]|| lline[3] == dr[0]|| lline[3] == vi[0]|| lline[3] == fu[0]|| lline[3] == se[0]|| lline[3] == si[0]|| lline[3] == ac[0]|| lline[3] == ne[0]){
+          kalte[1] = lline[3];
+          ii=(int)kalte[1];
+          ii-=48;
+          i*=10;
+          ii+=i;
+          output=ii;
+        }
+        
+        done=true;
+        minus=true;
 
-        delay(5000);
+        }else{
+          
+          if(lline[1] == nu[0]|| lline[1] == ei[0]|| lline[1] == zw[0]|| lline[1] == dr[0]|| lline[1] == vi[0]|| lline[1] == fu[0]|| lline[1] == se[0]|| lline[1] == si[0]|| lline[1] == ac[0]|| lline[1] == ne[0]){
+            kalte[0] = lline[1];
+            i=(int)kalte[0];
+            i-=48;
+            output=i;
+            done = true;
+            if(lline[2] == nu[0]|| lline[2] == ei[0]|| lline[2] == zw[0]|| lline[2] == dr[0]|| lline[2] == vi[0]|| lline[2] == fu[0]|| lline[2] == se[0]|| lline[2] == si[0]|| lline[2] == ac[0]|| lline[2] == ne[0]){
+              kalte[1] = lline[2];
+              ii=(int)kalte[1];
+              ii-=48;
+              i*=10;
+              ii+=i;
+              output=ii;
+            }
+          }
+        }
       }
+      Serial.print("output: ");
+      Serial.println(output);
     }
-
-  }
