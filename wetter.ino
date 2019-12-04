@@ -1,14 +1,11 @@
-// Arduino IDE 1.8.10
-// Boardverwalter URL: http://arduino.esp8266.com/stable/package_esp8266com_index.json
-// Board: ESP8622 2.6.2: NodeMCU 1.0 (ESP-12E Module)
-
 #include <ESP8266WiFi.h>
-#include <Wire.h>  // This library is already built in to the Arduino iDE
+#include <Wire.h>  // This library is already built in to the Arduino IDE
+#include <stdio.h>
 
-const char* ssid = "**"; // put your router name
-const char* password = "**";// put your password
+const char* ssid = "AlbWetter"; // put your router name
+const char* password = "********";// put your password
 const char* host = "api.thingspeak.com";
-char kalte[20];
+char kalte[6];
 String nu = "0";
 String ei = "1";
 String zw = "2";
@@ -19,13 +16,30 @@ String se = "6";
 String si = "7";
 String ac = "8";
 String ne = "9";
-bool done;
+bool done = false;
+char binarstr[9];
 bool minus=false;
 
 int i;
 int ii;
 int iii;
 int output;
+
+
+int make_bin(int dezi){ // hier wird die integer zahl übergeben
+  int zahl, rest, ergebnis=0, faktor=1;
+  zahl=dezi;
+  while (dezi){
+    rest = dezi % 2;
+    dezi = dezi / 2;
+    
+    faktor *= 10;
+    ergebnis = ergebnis + rest * faktor;
+    }
+  ergebnis *= 0.1;
+  return ergebnis;
+}
+
 
 void setup() {
   Serial.begin(115200);
@@ -51,7 +65,7 @@ void setup() {
   digitalWrite(D7, LOW);
   digitalWrite(D8, LOW);
 
- // Start by connecting to a WiFi network
+ // We start by connecting to a WiFi network
  
   Serial.println();
   Serial.println();
@@ -80,7 +94,7 @@ void loop(){
     Serial.println("connection failed");
   }
  
-  // We now create a URL for the request
+  // We now create a URI for the request
   String url = "/apps/thinghttp/send_request?api_key=V67Q2ZYSWAZ0X9GR";
   Serial.print("Requesting URL: ");
   Serial.println(url);
@@ -91,22 +105,11 @@ void loop(){
   delay(500);
  
   // Read all the lines of the reply from server and print them to Serial
-    done=false;
+   
     while(done == false){
       String lline = client.readStringUntil('\r');
-      
-      // TEST
-      lline = "0-3<span";
-      Serial.print("Das hier ist lline: ");
-      Serial.println(lline);
-      Serial.println();
-
-//      // minus geht auch so:
-//      if(lline[1]==(char)"-"[0]){
-//        Serial.println("MINUSZAHL");
-//      }
-
-      if(lline[1]=="-"[0]){
+    
+            if(lline[1]=="-"[0]){
         kalte[0] = lline[2];
         i=(int)kalte[0];
         i-=48;
@@ -145,4 +148,66 @@ void loop(){
       }
       Serial.print("output: ");
       Serial.println(output);
+  int binar = make_bin(output);
+  
+  sprintf(binarstr, "%d", binar);                                       // cast int to string
+  Serial.print("Binärzahl im String: ");
+  Serial.println(binarstr);
+  
+  for(int i = 0; i < 8; i++){
+    Serial.print("Binärzahl an index_");
+    Serial.print(i);
+    Serial.print(": ");
+    Serial.println(binarstr[i]);
+  }
+
+  if(int(binarstr[9]) == 49){//######################################## anstat den p- variablen kann man auch direkt die Pins ansprechen ! ##############################
+    //p0 = HIGH;
+    digitalWrite(D9, HIGH);
+  }//else{ p0 = LOW;}
+  
+  if(int(binarstr[8]) == 49){
+    //p1 = HIGH;
+    digitalWrite(D8, HIGH);
+  }//else{ p1 = LOW;}
+  
+  if(int(binarstr[7]) == 49){
+    //p2 = HIGH;
+    digitalWrite(D7, HIGH);
+  }//else{ p2 = LOW;}
+  
+  if(int(binarstr[6]) == 49){
+    //p3 = HIGH;
+    digitalWrite(D6, HIGH);
+  }//else{ p3 = LOW;}
+  
+  if(int(binarstr[5]) == 49){
+    //p4 = HIGH;
+    digitalWrite(D5, HIGH);
+  }//else{ p4 = LOW;}
+  
+  if(int(binarstr[4]) == 49){
+    //p5 = HIGH;
+    digitalWrite(D4, HIGH);
+  }//else{ p5 = LOW;}
+  
+  if(int(binarstr[3]) == 49){
+    //p7 = HIGH;
+    digitalWrite(D3, HIGH);
+  }//else{ p7 = LOW;}
+  
+  if(int(binarstr[2]) == 49){
+    //p8 = HIGH;
+    digitalWrite(D2, HIGH);
+  }//else{ p8 = LOW;}
+
+  if(int(binarstr[1]) == 49){
+    //p8 = HIGH;
+    digitalWrite(D1, HIGH);
+  }//else{ p8 = LOW;}
+
+  if(int(binarstr[0]) == 49){
+    //p8 = HIGH;
+    digitalWrite(D0, HIGH);
+  }//else{ p8 = LOW;}
     }
