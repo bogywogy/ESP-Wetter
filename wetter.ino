@@ -1,46 +1,24 @@
 #include <ESP8266WiFi.h>
-#include <Wire.h>  // This library is already built in to the Arduino IDE
+#include <Wire.h>
 #include <stdio.h>
 
-//const char* ssid = "WLAN-351405"; // put your router name
-//const char* password = "********";// put your password
-const char* ssid = "AlbWetter"; // put your router name
-const char* password = "Cq2h8000";// put your password
+const char* ssid = "AlbWetter";
+const char* password = "*********";
 const char* host = "api.thingspeak.com";
-char kalte[6];
-String nu = "0";
-String ei = "1";
-String zw = "2";
-String dr = "3";
-String vi = "4";
-String fu = "5";
-String se = "6";
-String si = "7";
-String ac = "8";
-String ne = "9";
-bool done;
 char binarstr[9];
-bool minus = false;
-int i;
-int ii;
-int iii;
-int output;
+char kalte[6];
+int temperatur;
 
-
-int make_bin(int dezi) { // hier wird die integer zahl übergeben
-  int zahl, rest, ergebnis = 0, faktor = 1;
-  zahl = dezi;
+int make_bin(int dezi) {
+  int rest, ergebnis = 0, faktor = 1;
   while (dezi) {
     rest = dezi % 2;
-    dezi = dezi / 2;
-
-    faktor *= 10;
+    dezi /= 2;
     ergebnis = ergebnis + rest * faktor;
+    faktor *= 10;
   }
-  ergebnis *= 0.1;
   return ergebnis;
 }
-
 
 void setup() {
   Serial.begin(115200);
@@ -54,7 +32,6 @@ void setup() {
   pinMode(D5 , OUTPUT);
   pinMode(D6 , OUTPUT);
   pinMode(D7 , OUTPUT);
-  pinMode(D8 , OUTPUT);
 
   digitalWrite(D0, LOW);
   digitalWrite(D1, LOW);
@@ -66,7 +43,7 @@ void setup() {
   digitalWrite(D7, LOW);
   digitalWrite(D8, LOW);
 
-  // We start by connecting to a WiFi network
+  // Connecting to a WiFi network
 
   Serial.println();
   Serial.println();
@@ -81,8 +58,9 @@ void setup() {
   }
   Serial.println("");
   Serial.println("WiFi connected");
-  Serial.println("IP address: ");
+  Serial.print("IP address: ");
   Serial.println(WiFi.localIP());
+  Serial.println();
 }
 void loop() {
   Serial.print("connecting to ");
@@ -95,34 +73,30 @@ void loop() {
     Serial.println("connection failed");
   }
 
-  // We now create a URI for the request
+  // Create an URL for the request
   String url = "/apps/thinghttp/send_request?api_key=V67Q2ZYSWAZ0X9GR";
   Serial.print("Requesting URL: ");
   Serial.println(url);
+  Serial.println();
   // This will send the request to the server
   client.print(String("GET ") + url + " HTTP/1.1\r\n" +
                "Host: " + host + "\r\n" +
                "Connection: close\r\n\r\n");
   delay(500);
 
-  // Read all the lines of the reply from server and print them to Serial
-  done = false;
+  // Read all lines of the reply from server and check if they match a pattern
+  bool done = false;
+  bool minus = false;
   while (done == false) {
     String lline = client.readStringUntil('\r');
+    // String lline = "06<spa";
 
-    if (lline[1] == "-"[0]) {
+    if (lline[1] =="-"[0]) {
       kalte[0] = lline[2];
-      i = (int)kalte[0];
-      i -= 48;
-      output = i;
-
-      if (lline[3] == nu[0] || lline[3] == ei[0] || lline[3] == zw[0] || lline[3] == dr[0] || lline[3] == vi[0] || lline[3] == fu[0] || lline[3] == se[0] || lline[3] == si[0] || lline[3] == ac[0] || lline[3] == ne[0]) {
+      temperatur = (int)kalte[0] - 48;
+      if (int(lline[3]) == 48 || int(lline[3]) == 49 || int(lline[3]) == 50 || int(lline[3]) == 51 || int(lline[3]) == 52 || int(lline[3]) == 53 || int(lline[3]) == 54 || int(lline[3]) == 55 || int(lline[3]) == 56 || int(lline[3]) == 57) {
         kalte[1] = lline[3];
-        ii = (int)kalte[1];
-        ii -= 48;
-        i *= 10;
-        ii += i;
-        output = ii;
+        temperatur = (int)kalte[1] - 48 + temperatur * 10;
       }
 
       done = true;
@@ -130,95 +104,93 @@ void loop() {
 
     } else {
 
-      if (lline[1] == nu[0] || lline[1] == ei[0] || lline[1] == zw[0] || lline[1] == dr[0] || lline[1] == vi[0] || lline[1] == fu[0] || lline[1] == se[0] || lline[1] == si[0] || lline[1] == ac[0] || lline[1] == ne[0]) {
+      if (int(lline[1]) == 48 || int(lline[1]) == 49 || int(lline[1]) == 50 || int(lline[1]) == 51 || int(lline[1]) == 52 || int(lline[1]) == 53 || int(lline[1]) == 54 || int(lline[1]) == 55 || int(lline[1]) == 56 || int(lline[1]) == 57) {
         kalte[0] = lline[1];
-        i = (int)kalte[0];
-        i -= 48;
-        output = i;
+        temperatur = (int)kalte[0] - 48;
+
         done = true;
-        if (lline[2] == nu[0] || lline[2] == ei[0] || lline[2] == zw[0] || lline[2] == dr[0] || lline[2] == vi[0] || lline[2] == fu[0] || lline[2] == se[0] || lline[2] == si[0] || lline[2] == ac[0] || lline[2] == ne[0]) {
+
+        if (int(lline[2]) == 48 || int(lline[2]) == 49 || int(lline[2]) == 50 || int(lline[2]) == 51 || int(lline[2]) == 52 || int(lline[2]) == 53 || int(lline[2]) == 54 || int(lline[2]) == 55 || int(lline[2]) == 56 || int(lline[2]) == 57) {
           kalte[1] = lline[2];
-          ii = (int)kalte[1];
-          ii -= 48;
-          i *= 10;
-          ii += i;
-          output = ii;
+          temperatur = (int)kalte[1] - 48 + temperatur * 10;
         }
       }
     }
   }
-  Serial.print("output: ");
-  Serial.println(output);
-  int binar = make_bin(output);
 
-  sprintf(binarstr, "%d", binar);                                       // cast int to string
-  Serial.print("Binärzahl im String: ");
+  Serial.print("Temperatur: ");
+  Serial.println(temperatur);
+
+
+  int binar = make_bin(temperatur);
+
+  sprintf(binarstr, "%d", binar);           // cast int to string
+  Serial.print("Als Binärzahl im String: ");
   Serial.println(binarstr);
+  Serial.println();
 
   for (int i = 0; i < 8; i++) {
-    Serial.print("Binärzahl an index_");
-    Serial.print(i);
-    Serial.print(": ");
+    Serial.print("Die einzelnen Werte des Strings: ");
     Serial.println(binarstr[i]);
   }
+  Serial.println();
 
-  if (int(binarstr[9]) == 49) {
-    digitalWrite(D9, HIGH);
-  } else {
-    digitalWrite(D9, LOW);
+  // Determine length and shift
+  int len = 0;
+  for (int i = 0; i < 8; i++) {
+    if (int(binarstr[i])) {
+      len+=1;
+    }
   }
+  int shift = 8 - len;
 
-  if (int(binarstr[8]) == 49) {
-    digitalWrite(D8, HIGH);
-  } else {
-    digitalWrite(D1, LOW);
-  }
-
-  if (int(binarstr[7]) == 49) {
+  if (int(binarstr[7-shift]) == 49) {
     digitalWrite(D7, HIGH);
   } else {
     digitalWrite(D7, LOW);
   }
 
-  if (int(binarstr[6]) == 49) {
+  if (int(binarstr[6-shift]) == 49) {
     digitalWrite(D6, HIGH);
   } else {
     digitalWrite(D6, LOW);
   }
 
-  if (int(binarstr[5]) == 49) {
+  if (int(binarstr[5-shift]) == 49) {
     digitalWrite(D5, HIGH);
   } else {
     digitalWrite(D5, LOW);
   }
 
-  if (int(binarstr[4]) == 49) {
+  if (int(binarstr[4-shift]) == 49) {
     digitalWrite(D4, HIGH);
   } else {
     digitalWrite(D4, LOW);
   }
 
-  if (int(binarstr[3]) == 49) {
+  if (int(binarstr[3-shift]) == 49) {
     digitalWrite(D3, HIGH);
   } else {
     digitalWrite(D3, LOW);
   }
 
-  if (int(binarstr[2]) == 49) {
+  if (int(binarstr[2-shift]) == 49) {
     digitalWrite(D2, HIGH);
   } else {
     digitalWrite(D2, LOW);
   }
 
-  if (int(binarstr[1]) == 49) {
+  if (int(binarstr[1-shift]) == 49) {
     digitalWrite(D1, HIGH);
   } else {
     digitalWrite(D1, LOW);
   }
 
-  if (int(binarstr[0]) == 49) {
+  if (minus == true) {
+    Serial.print("Setting minus/negative LED");
     digitalWrite(D0, HIGH);
   } else {
     digitalWrite(D0, LOW);
   }
+
 }
