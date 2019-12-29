@@ -1,13 +1,14 @@
 #include <ESP8266WiFi.h>
-#include <Wire.h>
+#include <Wire.h>  // This library is already built in to the Arduino IDE
 #include <stdio.h>
 
-const char* ssid = "AlbWetter";
-const char* password = "*********";
+// const char* ssid = "***";
+// const char* password = "***";
 const char* host = "api.thingspeak.com";
 char binarstr[9];
 char kalte[6];
 int temperatur;
+boolean connected;
 
 int make_bin(int dezi) {
   int rest, ergebnis = 0, faktor = 1;
@@ -43,7 +44,7 @@ void setup() {
   digitalWrite(D7, LOW);
   digitalWrite(D8, LOW);
 
-  // Connecting to a WiFi network
+  // We start by connecting to a WiFi network
 
   Serial.println();
   Serial.println();
@@ -63,14 +64,17 @@ void setup() {
   Serial.println();
 }
 void loop() {
-  Serial.print("connecting to ");
-  Serial.println(host);
+  // Serial.print("connecting to ");
+  // Serial.println(host);
 
   // Use WiFiClient class to create TCP connections
   WiFiClient client;
   const int httpPort = 80;
   if (!client.connect(host, httpPort)) {
     Serial.println("connection failed");
+    bool connected = false;
+  } else {
+    bool connected = true;
   }
 
   // Create an URL for the request
@@ -86,10 +90,13 @@ void loop() {
 
   // Read all lines of the reply from server and check if they match a pattern
   bool done = false;
+  if (connected == false) {
+    bool done = true;
+  }
   bool minus = false;
   while (done == false) {
     String lline = client.readStringUntil('\r');
-    // String lline = "06<spa";
+    // String lline = "01<spa";
 
     if (lline[1] =="-"[0]) {
       kalte[0] = lline[2];
@@ -120,6 +127,8 @@ void loop() {
 
   Serial.print("Temperatur: ");
   Serial.println(temperatur);
+  Serial.print("Input:");
+  Serial.println(kalte);
 
 
   int binar = make_bin(temperatur);
@@ -192,5 +201,6 @@ void loop() {
   } else {
     digitalWrite(D0, LOW);
   }
+  delay(5000);
 
 }
