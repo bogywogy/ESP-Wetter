@@ -1,38 +1,67 @@
 #include <ESP8266WiFi.h>
 #include <Wire.h>  // This library is already built in to the Arduino IDE
 #include <stdio.h>
+#include <string>
 
-// const char* ssid = "***";
-// const char* password = "***";
+ 
+
+// LEDs PIN 0-7, LSB PIN 0
+// LED PIN 8 is on for negative numbers
+
+ 
+
+// url Tübungen:
+// /apps/thinghttp/send_request?api_key=PF5VV92LT40YEPS6
+// url Albstadt:
+// /apps/thinghttp/send_request?api_key=V67Q2ZYSWAZ0X9GR
+// weather source: https://www.wetteronline.de/wetter/tuebingen
+
+ 
+
+const char* ssid = "+++"; // put your router name
+const char* password = "+++";// put your password
 const char* host = "api.thingspeak.com";
-char binarstr[9];
-char kalte[6];
-int temperatur;
-boolean connected;
+bool done;
+int output;
+bool ledControll[9];  // global array is initialized with 0
+long slave = 0;
 
-int make_bin(int dezi) {
-  int rest, ergebnis = 0, faktor = 1;
-  while (dezi) {
-    rest = dezi % 2;
-    dezi /= 2;
-    ergebnis = ergebnis + rest * faktor;
-    faktor *= 10;
-  }
-  return ergebnis;
+ 
+
+void run_counter() {
+  slave++;
+  Serial.print("Durchlauf Nr. ");
+  Serial.println(slave);
+  Serial.println();
+  Serial.println();
 }
 
-void setup() {
-  Serial.begin(115200);
-  delay(100);
+ 
 
-  pinMode(D0 , OUTPUT);
-  pinMode(D1 , OUTPUT);
-  pinMode(D2 , OUTPUT);
-  pinMode(D3 , OUTPUT);
-  pinMode(D4 , OUTPUT);
-  pinMode(D5 , OUTPUT);
-  pinMode(D6 , OUTPUT);
-  pinMode(D7 , OUTPUT);
+void led_check() {
+
+ 
+
+  digitalWrite(D0, HIGH);
+  delay(500);
+  digitalWrite(D1, HIGH);
+  delay(500);
+  digitalWrite(D2, HIGH);
+  delay(500);
+  digitalWrite(D3, HIGH);
+  delay(500);
+  digitalWrite(D4, HIGH);
+  delay(500);
+  digitalWrite(D5, HIGH);
+  delay(500);
+  digitalWrite(D6, HIGH);
+  delay(500);
+  digitalWrite(D7, HIGH);
+  delay(500);
+  digitalWrite(D8, HIGH);
+  delay(1000);
+
+ 
 
   digitalWrite(D0, LOW);
   digitalWrite(D1, LOW);
@@ -43,15 +72,189 @@ void setup() {
   digitalWrite(D6, LOW);
   digitalWrite(D7, LOW);
   digitalWrite(D8, LOW);
+  delay(300);
+  digitalWrite(D0, HIGH);
+  digitalWrite(D1, HIGH);
+  digitalWrite(D2, HIGH);
+  digitalWrite(D3, HIGH);
+  digitalWrite(D4, HIGH);
+  digitalWrite(D5, HIGH);
+  digitalWrite(D6, HIGH);
+  digitalWrite(D7, HIGH);
+  digitalWrite(D8, HIGH);
+  delay(300);
+  digitalWrite(D0, LOW);
+  digitalWrite(D1, LOW);
+  digitalWrite(D2, LOW);
+  digitalWrite(D3, LOW);
+  digitalWrite(D4, LOW);
+  digitalWrite(D5, LOW);
+  digitalWrite(D6, LOW);
+  digitalWrite(D7, LOW);
+  digitalWrite(D8, LOW);
+  delay(300);
+  digitalWrite(D0, HIGH);
+  digitalWrite(D1, HIGH);
+  digitalWrite(D2, HIGH);
+  digitalWrite(D3, HIGH);
+  digitalWrite(D4, HIGH);
+  digitalWrite(D5, HIGH);
+  digitalWrite(D6, HIGH);
+  digitalWrite(D7, HIGH);
+  digitalWrite(D8, HIGH);
+  delay(300);
+  digitalWrite(D0, LOW);
+  digitalWrite(D1, LOW);
+  digitalWrite(D2, LOW);
+  digitalWrite(D3, LOW);
+  digitalWrite(D4, LOW);
+  digitalWrite(D5, LOW);
+  digitalWrite(D6, LOW);
+  digitalWrite(D7, LOW);
+  digitalWrite(D8, LOW);
+  delay(300);
+  digitalWrite(D0, HIGH);
+  digitalWrite(D1, HIGH);
+  digitalWrite(D2, HIGH);
+  digitalWrite(D3, HIGH);
+  digitalWrite(D4, HIGH);
+  digitalWrite(D5, HIGH);
+  digitalWrite(D6, HIGH);
+  digitalWrite(D7, HIGH);
+  digitalWrite(D8, HIGH);
+  delay(300);
+  digitalWrite(D0, LOW);
+  digitalWrite(D1, LOW);
+  digitalWrite(D2, LOW);
+  digitalWrite(D3, LOW);
+  digitalWrite(D4, LOW);
+  digitalWrite(D5, LOW);
+  digitalWrite(D6, LOW);
+  digitalWrite(D7, LOW);
+  digitalWrite(D8, LOW);
+}
+
+ 
+
+int make_bin(int dezi) {
+  int zahl, rest, ergebnis = 0, faktor = 1, i = 0;
+  zahl = dezi;
+  while (dezi) {
+    rest = dezi % 2;
+    dezi = dezi / 2;
+
+ 
+
+    if(i < 9){                  // we dont want a array out of index when a to big number (from failed connection) arrives
+      ledControll[i] = rest;
+    }
+    i++;
+    Serial.print("rest: ");
+    Serial.println(rest);
+    faktor *= 10;
+    ergebnis = ergebnis + rest * faktor;
+  }
+  ergebnis *= 0.1;
+  return ergebnis;
+}
+
+ 
+
+// returns the searched temp
+int getDigit(String server_answer) {
+// helpfull links:
+// https://de.wikibooks.org/wiki/C-Programmierung:_Zeichenkettenfunktionen
+// https://www.geeksforgeeks.org/convert-string-char-array-cpp/
+
+ 
+
+  int n = server_answer.length();
+  char char_array[n + 1];
+  strcpy(char_array, server_answer.c_str());        // cast string to char
+  char trennzeichen[] = "\n";
+  const char *zahl;
+  zahl = strtok(char_array, trennzeichen);
+
+ 
+
+  int i = 1;
+  int suche;
+  while (zahl != NULL) {
+    printf("Token %d: %s\n", i++, zahl);
+    zahl = strtok(NULL, trennzeichen);
+    if (i == 20) {                      // temp stands at line 20; IMPORTANT: this line will variate on the url you use. All lines will be printed and you can 
+                                        // find the temperature there
+      suche = atoi(zahl);
+      Serial.print("###### Achtung die Zahl ist: ");
+      Serial.print(suche);
+      Serial.println(" ######");
+    }
+  }
+  return suche;
+
+ 
+
+}
+
+ 
+
+void led_controll(){
+
+ 
+
+  if (output < 1) {       // wenn temp < 1° hat dann aktiviere die minus led
+    digitalWrite(D8, HIGH);
+  } else {
+    digitalWrite(D8, LOW);
+  }
+  digitalWrite(D0, ledControll[0]);
+  digitalWrite(D1, ledControll[1]);
+  digitalWrite(D2, ledControll[2]);
+  digitalWrite(D3, ledControll[3]);
+  digitalWrite(D4, ledControll[4]);
+  digitalWrite(D5, ledControll[5]);
+  digitalWrite(D6, ledControll[6]);
+  digitalWrite(D7, ledControll[7]);
+}
+
+ 
+
+void setup() {
+  Serial.begin(115200);
+  delay(100);
+
+ 
+
+  pinMode(D0 , OUTPUT);
+  pinMode(D1 , OUTPUT);
+  pinMode(D2 , OUTPUT);
+  pinMode(D3 , OUTPUT);
+  pinMode(D4 , OUTPUT);
+  pinMode(D5 , OUTPUT);
+  pinMode(D6 , OUTPUT);
+  pinMode(D7 , OUTPUT);
+  pinMode(D8 , OUTPUT);
+
+ 
+
+  led_check();
+
+ 
 
   // We start by connecting to a WiFi network
+
+ 
 
   Serial.println();
   Serial.println();
   Serial.print("Connecting to ");
   Serial.println(ssid);
 
-  WiFi.begin(ssid, password);
+ 
+
+  WiFi.begin(ssid, password);//, password
+
+ 
 
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
@@ -59,148 +262,70 @@ void setup() {
   }
   Serial.println("");
   Serial.println("WiFi connected");
-  Serial.print("IP address: ");
+  Serial.println("IP address: ");
   Serial.println(WiFi.localIP());
-  Serial.println();
+  //ledCheck();
 }
+
+ 
+
 void loop() {
-  // Serial.print("connecting to ");
-  // Serial.println(host);
+  Serial.print("connecting to ");
+  Serial.println(host);
+
+ 
 
   // Use WiFiClient class to create TCP connections
   WiFiClient client;
   const int httpPort = 80;
   if (!client.connect(host, httpPort)) {
     Serial.println("connection failed");
-    bool connected = false;
-  } else {
-    bool connected = true;
   }
 
-  // Create an URL for the request
-  String url = "/apps/thinghttp/send_request?api_key=V67Q2ZYSWAZ0X9GR";
+ 
+
+  // We now create a URI for the request
+  String url = "/apps/thinghttp/send_request?api_key=PF5VV92LT40YEPS6";
   Serial.print("Requesting URL: ");
   Serial.println(url);
-  Serial.println();
   // This will send the request to the server
   client.print(String("GET ") + url + " HTTP/1.1\r\n" +
                "Host: " + host + "\r\n" +
                "Connection: close\r\n\r\n");
   delay(500);
 
-  // Read all lines of the reply from server and check if they match a pattern
-  bool done = false;
-  if (connected == false) {
-    bool done = true;
-  }
-  bool minus = false;
+ 
+
+  // Read all the lines of the reply from server and print them to Serial
+  done = false;
   while (done == false) {
-    String lline = client.readStringUntil('\r');
-    // String lline = "01<spa";
-
-    if (lline[1] =="-"[0]) {
-      kalte[0] = lline[2];
-      temperatur = (int)kalte[0] - 48;
-      if (int(lline[3]) == 48 || int(lline[3]) == 49 || int(lline[3]) == 50 || int(lline[3]) == 51 || int(lline[3]) == 52 || int(lline[3]) == 53 || int(lline[3]) == 54 || int(lline[3]) == 55 || int(lline[3]) == 56 || int(lline[3]) == 57) {
-        kalte[1] = lline[3];
-        temperatur = (int)kalte[1] - 48 + temperatur * 10;
-      }
-
-      done = true;
-      minus = true;
-
-    } else {
-
-      if (int(lline[1]) == 48 || int(lline[1]) == 49 || int(lline[1]) == 50 || int(lline[1]) == 51 || int(lline[1]) == 52 || int(lline[1]) == 53 || int(lline[1]) == 54 || int(lline[1]) == 55 || int(lline[1]) == 56 || int(lline[1]) == 57) {
-        kalte[0] = lline[1];
-        temperatur = (int)kalte[0] - 48;
-
-        done = true;
-
-        if (int(lline[2]) == 48 || int(lline[2]) == 49 || int(lline[2]) == 50 || int(lline[2]) == 51 || int(lline[2]) == 52 || int(lline[2]) == 53 || int(lline[2]) == 54 || int(lline[2]) == 55 || int(lline[2]) == 56 || int(lline[2]) == 57) {
-          kalte[1] = lline[2];
-          temperatur = (int)kalte[1] - 48 + temperatur * 10;
-        }
-      }
-    }
+    String server_answer = client.readString(); //String server_answer = client.readStringUntil('\r');
+    output = getDigit(server_answer);           // warning: if connection failed, server_answer gets a large number
+    //Serial.println("server_answer: ");
+    //Serial.println(server_answer);
+    done = true;
   }
+  Serial.print("output: ");
+  //output = -5; //test um gewählte temperaturen binär anzeigen zu lassen
+  Serial.println(output);
+  
+  // reset of the current leds, needed if corrupted number was submitted
+  for (int i = 0; i < 9; i++){
+    ledControll[i] = false;
+  }
+  
+  int binar = make_bin(output);   // led outputs are saved in ledControll
 
-  Serial.print("Temperatur: ");
-  Serial.println(temperatur);
-  Serial.print("Input:");
-  Serial.println(kalte);
-
-
-  int binar = make_bin(temperatur);
-
-  sprintf(binarstr, "%d", binar);           // cast int to string
-  Serial.print("Als Binärzahl im String: ");
-  Serial.println(binarstr);
-  Serial.println();
+ 
 
   for (int i = 0; i < 8; i++) {
-    Serial.print("Die einzelnen Werte des Strings: ");
-    Serial.println(binarstr[i]);
+    Serial.print("LED Controll");
+    Serial.print(i);
+    Serial.print(": ");
+    Serial.println(ledControll[i]);
   }
-  Serial.println();
-
-  // Determine length and shift
-  int len = 0;
-  for (int i = 0; i < 8; i++) {
-    if (int(binarstr[i])) {
-      len+=1;
-    }
-  }
-  int shift = 8 - len;
-
-  if (int(binarstr[7-shift]) == 49) {
-    digitalWrite(D7, HIGH);
-  } else {
-    digitalWrite(D7, LOW);
-  }
-
-  if (int(binarstr[6-shift]) == 49) {
-    digitalWrite(D6, HIGH);
-  } else {
-    digitalWrite(D6, LOW);
-  }
-
-  if (int(binarstr[5-shift]) == 49) {
-    digitalWrite(D5, HIGH);
-  } else {
-    digitalWrite(D5, LOW);
-  }
-
-  if (int(binarstr[4-shift]) == 49) {
-    digitalWrite(D4, HIGH);
-  } else {
-    digitalWrite(D4, LOW);
-  }
-
-  if (int(binarstr[3-shift]) == 49) {
-    digitalWrite(D3, HIGH);
-  } else {
-    digitalWrite(D3, LOW);
-  }
-
-  if (int(binarstr[2-shift]) == 49) {
-    digitalWrite(D2, HIGH);
-  } else {
-    digitalWrite(D2, LOW);
-  }
-
-  if (int(binarstr[1-shift]) == 49) {
-    digitalWrite(D1, HIGH);
-  } else {
-    digitalWrite(D1, LOW);
-  }
-
-  if (minus == true) {
-    Serial.print("Setting minus/negative LED");
-    digitalWrite(D0, HIGH);
-  } else {
-    digitalWrite(D0, LOW);
-  }
-  delay(5000);
-
+  if (output < 100){            // if output get a corrupted int from failed connection, do not update leds
+    led_controll();
+  } 
+  run_counter();
 }
