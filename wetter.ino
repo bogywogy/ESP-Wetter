@@ -1,32 +1,52 @@
 #include <ESP8266WiFi.h>
-#include <Wire.h>  // This library is already built in to the Arduino IDE
+#include <ESP8266WebServer.h>
+#include <ESP8266mDNS.h>
+#include <Wire.h>
 #include <stdio.h>
 #include <string>
+#include "arduino_secrets.h"
+#define DOMAIN "wetter"
+#define REFRESH_INTERVAL 300000 // milliseconds
 
- 
 
-// LEDs PIN 0-7, LSB PIN 0
-// LED PIN 8 is on for negative numbers
-
- 
 
 // url Tübungen:
 // /apps/thinghttp/send_request?api_key=PF5VV92LT40YEPS6
 // url Albstadt:
 // /apps/thinghttp/send_request?api_key=V67Q2ZYSWAZ0X9GR
 // weather source: https://www.wetteronline.de/wetter/tuebingen
+#define URL "/apps/thinghttp/send_request?api_key=PF5VV92LT40YEPS6"
 
- 
 
-const char* ssid = "+++"; // put your router name
-const char* password = "+++";// put your password
+
+// LEDs PIN 0-7, LSB PIN 0
+// LED PIN 8 is on for negative numbers
+
+
+
+
+// Networking
+
+
 const char* host = "api.thingspeak.com";
-bool done;
-int output;
-bool ledControll[9];  // global array is initialized with 0
+
+ESP8266WebServer server(80);
+
+
+
+// Loop
+
+
+int binary;
+int startServer;
+int temperature;
+bool ledControl[9];  // global array is initialized with 0
 long slave = 0;
 
- 
+
+
+// Helper Functions
+
 
 void run_counter() {
   slave++;
@@ -36,11 +56,10 @@ void run_counter() {
   Serial.println();
 }
 
- 
+
 
 void led_check() {
 
- 
 
   digitalWrite(D0, HIGH);
   delay(500);
@@ -61,7 +80,6 @@ void led_check() {
   digitalWrite(D8, HIGH);
   delay(1000);
 
- 
 
   digitalWrite(D0, LOW);
   digitalWrite(D1, LOW);
@@ -134,39 +152,15 @@ void led_check() {
   digitalWrite(D8, LOW);
 }
 
- 
 
-int make_bin(int dezi) {
-  int zahl, rest, ergebnis = 0, faktor = 1, i = 0;
-  zahl = dezi;
-  while (dezi) {
-    rest = dezi % 2;
-    dezi = dezi / 2;
-
- 
-
-    if(i < 9){                  // we dont want a array out of index when a to big number (from failed connection) arrives
-      ledControll[i] = rest;
-    }
-    i++;
-    Serial.print("rest: ");
-    Serial.println(rest);
-    faktor *= 10;
-    ergebnis = ergebnis + rest * faktor;
-  }
-  ergebnis *= 0.1;
-  return ergebnis;
-}
-
- 
 
 // returns the searched temp
-int getDigit(String server_answer) {
-// helpfull links:
-// https://de.wikibooks.org/wiki/C-Programmierung:_Zeichenkettenfunktionen
-// https://www.geeksforgeeks.org/convert-string-char-array-cpp/
 
- 
+int getDigit(String server_answer) {
+  // helpfull links:
+  // https://de.wikibooks.org/wiki/C-Programmierung:_Zeichenkettenfunktionen
+  // https://www.geeksforgeeks.org/convert-string-char-array-cpp/
+
 
   int n = server_answer.length();
   char char_array[n + 1];
@@ -175,15 +169,14 @@ int getDigit(String server_answer) {
   const char *zahl;
   zahl = strtok(char_array, trennzeichen);
 
- 
 
   int i = 1;
   int suche;
   while (zahl != NULL) {
     printf("Token %d: %s\n", i++, zahl);
     zahl = strtok(NULL, trennzeichen);
-    if (i == 20) {                      // temp stands at line 20; IMPORTANT: this line will variate on the url you use. All lines will be printed and you can 
-                                        // find the temperature there
+    if (i == 20) {                      // temp stands at line 20; IMPORTANT: this line will variate on the url you use. All lines will be printed and you can
+      // find the temperature there
       suche = atoi(zahl);
       Serial.print("###### Achtung die Zahl ist: ");
       Serial.print(suche);
@@ -191,39 +184,182 @@ int getDigit(String server_answer) {
     }
   }
   return suche;
-
- 
-
 }
 
- 
 
-void led_controll(){
 
- 
+// Set LEDs
+// values are read from ledControl array
 
-  if (output < 1) {       // wenn temp < 1° hat dann aktiviere die minus led
+void led_control(int temperature) {
+
+  if (temperature < 1) {       // wenn temp < 1° hat dann aktiviere die minus led
     digitalWrite(D8, HIGH);
   } else {
     digitalWrite(D8, LOW);
   }
-  digitalWrite(D0, ledControll[0]);
-  digitalWrite(D1, ledControll[1]);
-  digitalWrite(D2, ledControll[2]);
-  digitalWrite(D3, ledControll[3]);
-  digitalWrite(D4, ledControll[4]);
-  digitalWrite(D5, ledControll[5]);
-  digitalWrite(D6, ledControll[6]);
-  digitalWrite(D7, ledControll[7]);
+
+  digitalWrite(D0, ledControl[0]);
+  digitalWrite(D1, ledControl[1]);
+  digitalWrite(D2, ledControl[2]);
+  digitalWrite(D3, ledControl[3]);
+  digitalWrite(D4, ledControl[4]);
+  digitalWrite(D5, ledControl[5]);
+  digitalWrite(D6, ledControl[6]);
+  digitalWrite(D7, ledControl[7]);
 }
 
- 
+
+
+// Convert a decimal to a binary number
+// Put the result in the ledControl array
+
+int make_bin(int dezi) {
+  int zahl = dezi;
+  int rest, ergebnis = 0;
+  int faktor = 1;
+  int i = 0;
+
+  while (dezi) {
+
+    rest = dezi % 2;
+    dezi /= 2;
+
+    if (i < 9) {                // we dont want a array out of index when a to big number (from failed connection) arrives
+      ledControl[i] = rest;
+    }
+    i++;
+    Serial.print("rest: ");
+    Serial.println(rest);
+    faktor *= 10;
+    ergebnis += rest * faktor;
+  }
+
+  ergebnis *= 0.1;
+
+  return ergebnis;
+}
+
+
+
+// Handle incoming requests
+
+void handleRoot() {
+
+  String response = String(temperature);
+
+  Serial.println("Received request, sending: " + response);
+
+  server.send(200, "text/plain", response);
+}
+
+
+
+// Make an AP
+// Host a server
+// Set up mDNS
+
+void apTemp(String ssid, String password) {
+
+
+  // Access Point
+
+  WiFi.mode(WIFI_AP);
+
+  Serial.print("Setting soft-AP ... ");
+
+  Serial.println(WiFi.softAP(ssid, password) ? "Ready" : "Failed!");
+
+
+  // Webserver
+
+  server.on("/", handleRoot);
+  server.begin();
+  Serial.println("HTTP server started");
+
+
+  // mDNS
+
+  // Note: mDNS doesn't work with smartphones
+
+  if (MDNS.begin(DOMAIN)) {  // address: DOMAIN.local
+    Serial.println("MDNS started");
+  }
+}
+
+
+// Get the latest temperature and update the LEDs
+// Connect to a WiFi network
+// Fetch the latest temperature from the API server
+// Parse the value and convert it to binary, update LEDs
+// Run this function every n minutes
+
+int tempRefresh() {
+  String response;
+  int temp;
+
+
+  // Establish WiFi connection
+
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(SECRET_SSID, SECRET_PASS);
+
+  Serial.print("\n\nConnecting to ");
+  Serial.println(SECRET_SSID);
+
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+
+  Serial.println("\nWiFi connected");
+  Serial.println("IP address: ");
+  Serial.println(WiFi.localIP());
+
+
+  // Connect to the website
+
+  Serial.print("Connecting to ");
+  Serial.println(host);
+
+  WiFiClient client;
+  if (!client.connect(host, 80)) {
+    Serial.println("connection failed");
+  }
+
+
+  // Send request
+
+  client.print(String("GET ") + URL +
+               " HTTP/1.1\r\n" +
+               "Host: " + host + "\r\n" +
+               "Connection: close\r\n\r\n");
+  delay(500);
+
+
+  // Parse response
+
+  response = client.readString();
+
+  Serial.print("response: ");
+  Serial.println(response);
+
+  temp = getDigit(response);
+
+  Serial.print("temperature: ");
+  Serial.println(String(temp));
+
+  return temp;
+}
+
+
 
 void setup() {
+
+
   Serial.begin(115200);
   delay(100);
 
- 
 
   pinMode(D0 , OUTPUT);
   pinMode(D1 , OUTPUT);
@@ -235,97 +371,92 @@ void setup() {
   pinMode(D7 , OUTPUT);
   pinMode(D8 , OUTPUT);
 
- 
 
   led_check();
-
- 
-
-  // We start by connecting to a WiFi network
-
- 
-
-  Serial.println();
-  Serial.println();
-  Serial.print("Connecting to ");
-  Serial.println(ssid);
-
- 
-
-  WiFi.begin(ssid, password);//, password
-
- 
-
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.print(".");
-  }
-  Serial.println("");
-  Serial.println("WiFi connected");
-  Serial.println("IP address: ");
-  Serial.println(WiFi.localIP());
-  //ledCheck();
 }
 
- 
+
 
 void loop() {
-  Serial.print("connecting to ");
-  Serial.println(host);
+  // reruns every REFRESH_INTERVAL milliseconds
 
- 
 
-  // Use WiFiClient class to create TCP connections
-  WiFiClient client;
-  const int httpPort = 80;
-  if (!client.connect(host, httpPort)) {
-    Serial.println("connection failed");
+
+  /* Fetch latest temperature from API server */
+
+  temperature = tempRefresh();
+
+
+
+  /* Update LEDs */
+
+  if (temperature > 100) {
+    Serial.print("Bad value, not updating LEDs");
   }
 
- 
 
-  // We now create a URI for the request
-  String url = "/apps/thinghttp/send_request?api_key=PF5VV92LT40YEPS6";
-  Serial.print("Requesting URL: ");
-  Serial.println(url);
-  // This will send the request to the server
-  client.print(String("GET ") + url + " HTTP/1.1\r\n" +
-               "Host: " + host + "\r\n" +
-               "Connection: close\r\n\r\n");
-  delay(500);
+  else {
 
- 
+    // Convert to binary
 
-  // Read all the lines of the reply from server and print them to Serial
-  done = false;
-  while (done == false) {
-    String server_answer = client.readString(); //String server_answer = client.readStringUntil('\r');
-    output = getDigit(server_answer);           // warning: if connection failed, server_answer gets a large number
-    //Serial.println("server_answer: ");
-    //Serial.println(server_answer);
-    done = true;
+    binary = make_bin(temperature);
+    Serial.println("Binary: " + String(binary));
+
+    // Make binary array
+
+    for (int i = 0; i < 8; i++) {
+      Serial.print("LED Control " + String(i) + ": ");
+      Serial.println(ledControl[i]);
+    }
+
+    // Update LEDs
+
+    Serial.println("Updating LEDs");
+    led_control(temperature); // reads values from ledControl array
   }
-  Serial.print("output: ");
-  //output = -5; //test um gewählte temperaturen binär anzeigen zu lassen
-  Serial.println(output);
-  
-  // reset of the current leds, needed if corrupted number was submitted
-  for (int i = 0; i < 9; i++){
-    ledControll[i] = false;
-  }
-  
-  int binar = make_bin(output);   // led outputs are saved in ledControll
 
- 
 
-  for (int i = 0; i < 8; i++) {
-    Serial.print("LED Controll");
-    Serial.print(i);
-    Serial.print(": ");
-    Serial.println(ledControll[i]);
-  }
-  if (output < 100){            // if output get a corrupted int from failed connection, do not update leds
-    led_controll();
-  } 
+
+  /* Counter */
+
   run_counter();
+
+
+
+  /* Make an AP with temperature as ssid and host a webserver */
+
+  apTemp("Temperatur: " + String(temperature) + "°C", "");
+  startServer = millis();
+  
+  for (;;) {
+    if (millis() - startServer > REFRESH_INTERVAL) {
+      break;
+    }
+    
+    server.handleClient();
+    MDNS.update();
+    delay(50);
+  }
+
+  
+
+  /* remove?
+
+    // Reset the LEDs
+    for (int i = 0; i < 9; i++) {
+    ledControl[i] = false;
+    }
+
+  */
 }
+
+
+/* todo
+
+    make something with button
+
+    change city by sending a request with parameter city=Berlin for ex.
+
+    better API / weather service (wttr.in)
+
+*/
